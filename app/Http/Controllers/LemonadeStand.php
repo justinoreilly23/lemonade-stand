@@ -91,15 +91,18 @@ class LemonadeStand extends Controller {
         $message       = "";
 
         // Price set vars
-
+        $lemonadePrice = \request()->get('lemonadePrice');
         // Price per lemonade logic
+        $lemonadePrice       /= 100;
+        $this->lemonadePrice = $lemonadePrice;
+        session(['lemonadePrice' => $lemonadePrice]);
 
         // Purchasing logic
         if ($this->buyCounter == 1)
         {
             $this->buyCounter = 0;
 
-            if ($potentialMix * $mixPrice <= $money)
+            if ($potentialMix * $mixPrice < $money)
             {
                 $canAffordMix = true;
             }
@@ -109,7 +112,7 @@ class LemonadeStand extends Controller {
                 $canAffordCups = true;
             }
 
-            if ($canAffordMix && $canAffordCups)
+            if ($canAffordMix == true && $canAffordCups == true)
             {
                 $mix   += $potentialMix;
                 $cups  += $potentialCups;
@@ -132,12 +135,13 @@ class LemonadeStand extends Controller {
             $message = "<h3 class='bg-warning'>You have already purchased supplies.</h3>";
         }
 
+        $this->sales();
+
         return redirect('/continue')->with($message);
     }
 
-    public function result()
+    public function updateStats()
     {
-        return view('result');
     }
 
     public function nextDay()
@@ -147,9 +151,62 @@ class LemonadeStand extends Controller {
         $this->buyCounter = 1;
     }
 
+    public function sales()
+    {
+        $price     = $this->lemonadePrice;
+        $weather   = rand(1, 100);
+        $chances   = 0;
+        $customers = $this->customers;
+        $possibleCustomers = null;
+
+        // Chances of purchase
+        switch (true)
+        {
+            case $price < .10 :
+                $chances += 80;
+            break;
+            case $price < .25 :
+                $chances += 65;
+            break;
+            case $price < .50 :
+                $chances += 40;
+            break;
+            case $price < .75 :
+                $chances += 15;
+            break;
+            case $price < .90 :
+                $chances += 5;
+            break;
+            case $price <= 1 :
+                $chances += 3;
+            break;
+        }
+
+        // Determines how many customers will be in the market for a drink
+        switch (true)
+        {
+            case $weather < 25 :
+                $chances -= 5;
+            break;
+            case $weather < 50 :
+                $chances -= 30;
+            break;
+            case $weather < 75 :
+                $chances -= 55;
+            break;
+            case $weather <= 100 :
+                $chances -= 80;
+            break;
+        }
+
+        $possibleCustomers = $chances;
+
+        dd([$price, $weather, $chances]);
+    }
+
     public function generatePrices()
     {
-        $this->pricePerMix = 2 * (rand(25, 75) / 100);
+        $this->pricePerMix = 2 * (rand(25, 100) / 100);
         $this->pricePerCup = rand(25, 75) / 100;
     }
 }

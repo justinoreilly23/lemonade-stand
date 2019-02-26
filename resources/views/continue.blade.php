@@ -15,11 +15,13 @@
           <th >Remaining balance</th >
           <th >Mix</th >
           <th >Cups</th >
+          <th >Price per lemonade</th >
         </tr >
         <tr >
           <td >${{ session()->get('money') }}</td >
           <td >{{ session()->get('mix') }}</td >
           <td >{{ session()->get('cups') }}</td >
+          <td >{{ session()->get('lemonadePrice') }}</td >
         </tr >
       </table >
     </div >

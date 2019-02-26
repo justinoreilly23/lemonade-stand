@@ -32,8 +32,8 @@
               <h3 ><label for="lemonadePrice" class="label" >Price per cup
                   <span class="text-muted" >(in cents)</span ></label ></h3 >
               <input type="number"
-                     name="requestedMix"
-                     title="Mix"
+                     name="lemonadePrice"
+                     title="Price per lemonade"
                      class="form-control"
                      value="1"
                      min="1"
