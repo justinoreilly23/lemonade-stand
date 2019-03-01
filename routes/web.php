@@ -17,5 +17,5 @@ Route::get('/buy', 'PageController@formBuySupplies');
 Route::post('/buy', 'LemonadeStand@setup');
 
 Route::get('/continue', 'PageController@proceed');
-Route::get('/simulate', 'PageController@simulate');
+Route::get('/simulate', 'LemonadeStand@sales');
 Route::get('/results', 'PageController@results');

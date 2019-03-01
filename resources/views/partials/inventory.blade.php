@@ -10,7 +10,7 @@
     <tr >
       <td >{{ session()->get('day') }}</td >
       <td >${{ session()->get('money') }}</td >
-      <td >${{ session()->get('customers') }}</td >
+      <td >@php $customers = session('customers'); dd($customers); @endphp</td >
       <td >{{ session()->get('mix') }}</td >
       <td >{{ session()->get('cups') }}</td >
     </tr >

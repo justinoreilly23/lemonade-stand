@@ -51,17 +51,7 @@ class LemonadeStand extends Controller {
         $buyCounter    = $this->buyCounter;
         $lemonadePrice = $this->lemonadePrice;
 
-        session([
-                    'money'         => $money,
-                    'customers'     => $customers,
-                    'weather'       => $weather,
-                    'day'           => $day,
-                    'mix'           => $mix,
-                    'mixPrice'      => $pricePerMix,
-                    'cups'          => $cups,
-                    'cupPrice'      => $pricePerCup,
-                    'lemonadePrice' => $lemonadePrice,
-                ]);
+        $this->updateSession();
 
         return $this->intro();
     }
@@ -70,7 +60,7 @@ class LemonadeStand extends Controller {
     {
         $message
             = "<h2>Welcome to lemonade stand!</h2>
-               <p>Your goal is to make as much money as possible in 21 days by selling cups lemonade.</p>
+               <p>Your goal is to make as much money as possible in one week by selling cups lemonade.</p>
                <a href='/buy'><button class='btn btn-primary'>Start</button></a>";
 
         return $message;
@@ -78,135 +68,144 @@ class LemonadeStand extends Controller {
 
     public function setup()
     {
+
         // Purchasing vars
-        $money         = session()->get('money');
+        $money         = session('money');
         $mix           = session('mix');
         $cups          = session('cups');
         $potentialMix  = \request()->get('requestedMix');
         $potentialCups = \request()->get('requestedCups');
         $mixPrice      = $this->pricePerMix;
         $cupPrice      = $this->pricePerCup;
-        $canAffordMix  = false;
-        $canAffordCups = false;
+        $canAfford     = false;
         $message       = "";
 
         // Price set vars
-        $lemonadePrice = \request()->get('lemonadePrice');
-        // Price per lemonade logic
+        $lemonadePrice       = \request()->get('lemonadePrice');
         $lemonadePrice       /= 100;
         $this->lemonadePrice = $lemonadePrice;
-        session(['lemonadePrice' => $lemonadePrice]);
 
         // Purchasing logic
         if ($this->buyCounter == 1)
         {
             $this->buyCounter = 0;
 
-            if ($potentialMix * $mixPrice < $money)
+            if ($potentialMix * $mixPrice < $money && $potentialCups * $cupPrice < $money)
             {
-                $canAffordMix = true;
+                $canAfford = true;
             }
 
-            if ($potentialCups * $cupPrice < $money)
+            if ($canAfford == true)
             {
-                $canAffordCups = true;
-            }
-
-            if ($canAffordMix == true && $canAffordCups == true)
-            {
-                $mix   += $potentialMix;
-                $cups  += $potentialCups;
-                $money -= $potentialMix * $mixPrice;
-                $money -= $potentialMix * $mixPrice;
-
-                session([
-                            'mix'   => $mix,
-                            'cups'  => $cups,
-                            'money' => $money,
-                        ]);
+                $this->mix   += $potentialMix;
+                $this->cups  += $potentialCups;
+                $this->money -= $potentialMix * $mixPrice;
+                $this->money -= $potentialCups * $cupPrice;
             }
             else
             {
                 $message = "Insufficient funds";
             }
+
         }
         elseif ($this->buyCounter == 0)
         {
             $message = "<h3 class='bg-warning'>You have already purchased supplies.</h3>";
         }
 
-        $this->sales();
+        session(['money' => $this->money, 'mix' => $this->mix, 'cups' => $this->mix, 'lemonadePrice' => $this->lemonadePrice]);
 
         return redirect('/continue')->with($message);
     }
 
-    public function updateStats()
+    public function sales()
     {
+        $price             = session('lemonadePrice');
+        $money             = session('money');
+        $baseTemp          = 40;
+        $weather           = $baseTemp + rand(1, 60);
+        $chances           = 0;
+        $customers         = session('customers');
+        $possibleCustomers = null;
+
+        switch (true)
+        {
+            case $price < .25 :
+                $chances += rand(25, 75);
+            break;
+            case $price < .50 :
+                $chances += rand(0, 50);
+            break;
+            case $price < .75 :
+                $chances += rand(0, 15);
+            break;
+            case $price < 1 :
+                $chances -= 10;
+            break;
+        }
+
+        switch (true)
+        {
+            case $weather < 75 :
+                $chances           += 0;
+                $possibleCustomers += rand(1, 5);
+            break;
+            case $weather < 100 :
+                $chances           += rand(15, 40);
+                $possibleCustomers += rand(4, 12);
+            break;
+        }
+
+        $customers = range(1, $possibleCustomers);
+
+        // Add to money
+        foreach ($customers as $customer)
+        {
+            $money += $customer * $price;
+        }
+
+        $this->customers = $customers;
+        $this->money     = $money;
+
+
+        session(['money' => $this->money, 'customers' => $this->customers]);
+
+        return redirect('/results');
     }
 
     public function nextDay()
     {
-        $this->generatePrices();
+        while ($this->day < 7)
+        {
+            $this->generatePrices();
+            $this->buyCounter = 1;
+            $this->day ++;
 
-        $this->buyCounter = 1;
+            session(['buyCounter' => $this->buyCounter, 'day' => $this->day, 'money' => $this->money]);
+        }
+
+        return redirect('/buy');
     }
 
-    public function sales()
+    public function updateSession()
     {
-        $price     = $this->lemonadePrice;
-        $weather   = rand(1, 100);
-        $chances   = 0;
-        $customers = $this->customers;
-        $possibleCustomers = null;
-
-        // Chances of purchase
-        switch (true)
-        {
-            case $price < .10 :
-                $chances += 80;
-            break;
-            case $price < .25 :
-                $chances += 65;
-            break;
-            case $price < .50 :
-                $chances += 40;
-            break;
-            case $price < .75 :
-                $chances += 15;
-            break;
-            case $price < .90 :
-                $chances += 5;
-            break;
-            case $price <= 1 :
-                $chances += 3;
-            break;
-        }
-
-        // Determines how many customers will be in the market for a drink
-        switch (true)
-        {
-            case $weather < 25 :
-                $chances -= 5;
-            break;
-            case $weather < 50 :
-                $chances -= 30;
-            break;
-            case $weather < 75 :
-                $chances -= 55;
-            break;
-            case $weather <= 100 :
-                $chances -= 80;
-            break;
-        }
-
-        $possibleCustomers = $chances;
-
-        dd([$price, $weather, $chances]);
+        session([
+                    'money'         => $this->money,
+                    'customers'     => $this->customers,
+                    'weather'       => $this->weather,
+                    'day'           => $this->day,
+                    'mix'           => $this->mix,
+                    'cups'          => $this->cups,
+                    'mixPrice'      => $this->pricePerMix,
+                    'cupPrice'      => $this->pricePerCup,
+                    'buyCounter'    => $this->buyCounter,
+                    'lemonadePrice' => $this->lemonadePrice,
+                ]);
     }
 
     public function generatePrices()
     {
         $this->pricePerMix = 2 * (rand(25, 100) / 100);
-        $this->pricePerCup = rand(25, 75) / 100;
+        $this->pricePerCup = rand(2, 15) / 100;
     }
 }

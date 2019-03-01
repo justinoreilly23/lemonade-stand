@@ -15,7 +15,9 @@
 </head >
 <body class="w-100 m-auto" >
 <div class="text-center" >
-  <h6 class="text-muted" >go to "/" to start a new game.</h6 >
+  <a href="/" >
+      <button class="btn btn-warning">New game</button >
+  </a >
 </div >
 
 @hassection('content')
